@@ -1,27 +1,20 @@
 require 'formula'
 
 class Wkhtmltopdf < Formula
-  homepage 'http://code.google.com/p/wkhtmltopdf/'
-  url 'https://wkhtmltopdf.googlecode.com/files/wkhtmltopdf-0.11.0_rc1.tar.bz2'
-  sha1 'db03922d281856e503b3d562614e3936285728c7'
-  version '0.11.0_rc1'
+  homepage 'http://wkhtmltopdf.org'
+  url 'https://github.com/wkhtmltopdf/wkhtmltopdf/archive/0.12.1.tar.gz'
+  sha1 'f8d1523d52891014b79f25e0d74d0f90e459b1d6'
+  version '0.12.1'
 
   depends_on 'qt'
 
-  def install
-    # fix that missing TEMP= include.
-    inreplace 'common.pri' do |s|
-      s.gsub! 'TEMP = $$[QT_INSTALL_LIBS] libQtGui.prl', ''
-      s.gsub! 'include($$join(TEMP, "/"))', ''
-    end
+  option 'ignore-user-input', 'Ignores user input events'
 
-    # It tries to build universally, but Qt is bottled as 64bit => build error.
-    # If we are 64bit, do not compile with -arch i386.  This is a Homebrew
-    # issue with our Qt4, not upstream, because wkhtmltopdf bundles a patched
-    # Qt4 that Homebrew doesn't use.
-    if MacOS.prefer_64_bit?
-      inreplace 'src/pdf/pdf.pro', 'x86', Hardware::CPU.arch_64_bit
-      inreplace 'src/image/image.pro', 'x86', Hardware::CPU.arch_64_bit
+  def install
+    if build.include? 'ignore-user-input'
+      inreplace 'src/lib/converter.cc' do |s|
+        s.gsub! 'QEventLoop::WaitForMoreEvents | QEventLoop::AllEvents', 'QEventLoop::ExcludeUserInputEvents'
+      end
     end
 
     if MacOS.version >= :mavericks && ENV.compiler == :clang
